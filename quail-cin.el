@@ -51,7 +51,7 @@
       key t t)))
   )
 
-(defun parse-cin (cin-file-name &optional action)
+(defun parse-cin (cin-file-name &optional action phrase)
   (when (file-exists-p cin-file-name)
     (with-temp-buffer
     ;(with-output-to-temp-buffer "*cin*"
@@ -63,12 +63,15 @@
 	(goto-char (point-max))
 	(insert "%chardef end\n"))
       ;;
-      (goto-char 1)
+      (goto-char (point-min))
+      (delete-trailing-whitespace)
+      (goto-char (point-min))
       (let (section attrs)
 	(while (re-search-forward
 		"[ \t]*\\([^ \n\t]+\\)[ \t]*\\([^\t\n]+\\)?" nil "noerror")
 	  (let ((key (match-string 1))
-		(val (match-string 2)))
+		(val (match-string 2))
+		(templ (if phrase "  (\"%s\" [\"%s\"])" "  (\"%s\" \"%s\")")))
 	    ;;(save-match-data
 	      (when (string-match-p "^%[^%]" key)
 		(cond ((string= val "begin") (setq section (intern key)))))
@@ -88,7 +91,8 @@
 		     (replace-match ")\n"))
 		    (t
 		     (replace-match (format
-				     "  (\"%s\" \"%s\")"
+				     ;;"  (\"%s\" \"%s\")"
+				     templ
 				     (cin-safe-quote-key key) (cin-safe-quote val))))))
 	     (t
 	      (progn
@@ -97,8 +101,8 @@
 	     )
 	    ;;(princ (format "'%s' : '%s'\n" key val))
 	    ;;(save-match-data
-	      (when (string-match-p "^%[^%]" key)
-		(cond ((string= val "end")   (setq section nil))))
+	    (when (string-match-p "^%[^%]" key)
+	      (cond ((string= val "end")   (setq section nil))))
 	      ;;)
 	    ))
 	;;(print attrs)
@@ -111,13 +115,13 @@
 	  (funcall action))
 	))))
 
-(defun xy-quail-convert-cin-to-quail (cin-file-name)
-  (parse-cin cin-file-name #'save-buffer))
+(defun xy-quail-convert-cin-to-quail (cin-file-name &optional phrase)
+  (parse-cin cin-file-name #'save-buffer phrase))
 
-(defun xy-quail-load-cin (cin-file-name)
+(defun xy-quail-load-cin (cin-file-name &optional phrase)
   (interactive (list
 		(read-file-name "cin path: ")))
-  (parse-cin cin-file-name #'eval-buffer))
+  (parse-cin cin-file-name #'eval-buffer phrase))
 
 
 ;; End:
