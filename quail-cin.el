@@ -64,8 +64,7 @@
 	(insert "%chardef end\n"))
       ;;
       (goto-char (point-min))
-      (delete-trailing-whitespace)
-      (goto-char (point-min))
+      (save-excursion (delete-trailing-whitespace))
       (let (section attrs)
 	(while (re-search-forward
 		"[ \t]*\\([^ \n\t]+\\)[ \t]*\\([^\t\n]+\\)?" nil "noerror")
