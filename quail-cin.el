@@ -6,35 +6,52 @@
 
 ;;; Usage:
 ;;
-;; (xy-quail-load-cin "greek.cin")
-;; (xy-quail-load-cin "symbols.cin")
-;; (xy-quail-load-cin "cj.cin")
+;;   (quail-cin-load-file "greek.cin")
+;;   (quail-cin-load-file "symbols.cin")
+;;   (quail-cin-load-file "cj.cin")
+;;
+;; to load the cin file which is designed for phrase definitions:
+;;
+;;   (quail-cin-load-file "NewCJ3.cin" t)
 ;;
 
 ;;; Code:
 
+;; Custom Variables:
+
+(defvar cin-ime-name-prefix "quail-cin-")
+
+
+(defun cin-attrs-get-cname (attrs &optional default)
+  (or (cdr (assoc '%prompt attrs))
+      (cdr (assoc '%cname attrs))
+      default
+      (cdr (assoc '%ename attrs))
+      "CIN"))
+
 (defun cin-attrs-to-header (attrs)
   (let* ((ename (cdr (assoc '%ename attrs)))
-	 (cname (or (cdr (assoc '%prompt attrs))
-		    (cdr (assoc '%cname attrs))
-		    ename)))
+	 (cname (cin-attrs-get-cname attrs ename))
+	 (prefix cin-ime-name-prefix))
     (format (concat
-	     "(require 'quail)\n"
-	     "(quail-define-package \"lime-%s-quail\" \"Chinese-BIG5\" \"[%s]\"\n"
+	     "(require 'quail)\n\n"
+	     "(quail-define-package \"%s%s\" \"Chinese-BIG5\" \"[%s]\"\n"
 	     " '(")
-	    ename cname)))
+	    prefix ename cname)))
 
 (defun cin-attrs-to-footer (attrs)
-  (format (concat
-	   "  ) \"LIME %s for quail\n\n"
-	   "\\\\\\\\<quail-translation-docstring>\n"
-	   "\"\n"
-	   " '((\"\\\\C-?\" . quail-delete-last-char)\n"
-	   "   (\">\" . quail-next-translation)\n"
-	   "   (\"<\" . quail-prev-translation))\n"
-	   " nil nil nil t)")
-	  (cdr (assoc '%prompt attrs))
-	  ))
+  (let* ((ename (cdr (assoc '%ename attrs)))
+	 (cname (cin-attrs-get-cname attrs ename)))
+    (format (concat
+	     "  ) \"Input Method Module %s for quail\n\n"
+	     "This file is converted by quail-cin package.\n\n"
+	     "\\\\\\\\<quail-translation-docstring>\n"
+	     "\"\n"
+	     " '((\"\\\\C-?\" . quail-delete-last-char)\n"
+	     "   (\">\" . quail-next-translation)\n"
+	     "   (\"<\" . quail-prev-translation))\n"
+	     " nil nil nil t)\n")
+	    cname)))
 
 (defun cin-safe-quote-key (key)
   (replace-regexp-in-string
@@ -42,17 +59,17 @@
    key)
   )
 
-(defun cin-safe-quote (key)
+(defun cin-safe-quote (val)
   (replace-regexp-in-string
    ";" (regexp-quote (regexp-quote "\\;"))
    (replace-regexp-in-string
     "\\\\" (regexp-quote (regexp-quote "\\\\"))
     (replace-regexp-in-string
      "\"" "#-#\\\""
-      key t t)))
+      val t t)))
   )
 
-(defun parse-cin (cin-file-name &optional action phrase)
+(defun cin-parse-file (cin-file-name &optional phrase action)
   (when (file-exists-p cin-file-name)
     (with-temp-buffer
       (insert-file-contents cin-file-name)
@@ -86,9 +103,8 @@
 		    ((string= val "end")
 		     (replace-match ")\n"))
 		    (t
-		     (replace-match (format
-				     templ
-				     (cin-safe-quote-key key) (cin-safe-quote val))))))
+		     (replace-match (format templ (cin-safe-quote-key key)
+					    (cin-safe-quote val))))))
 	     (t
 	      (progn
 		(add-to-list 'attrs (cons (intern key) val))
@@ -102,18 +118,19 @@
 	(goto-char (point-min))
 	(replace-string "#-#\\" "")
 	(goto-char (point-max))
-	(insert (format "(provide 'lime-%s-quail)\n\n" (cdr (assoc '%ename attrs))))
+	(insert (format "(provide '%s%s)\n\n"
+			cin-ime-name-prefix (cdr (assoc '%ename attrs))))
 	(when action
 	  (funcall action))
 	))))
 
-(defun xy-quail-convert-cin-to-quail (cin-file-name &optional phrase)
-  (parse-cin cin-file-name #'save-buffer phrase))
+(defun quail-cin-convert-to-quail (cin-file-name &optional phrase)
+  (cin-parse-file cin-file-name phrase #'save-buffer))
 
-(defun xy-quail-load-cin (cin-file-name &optional phrase)
+(defun quail-cin-load-file (cin-file-name &optional phrase)
   (interactive (list
-		(read-file-name "cin path: ")))
-  (parse-cin cin-file-name #'eval-buffer phrase))
+		(read-file-name "cin file name: ")))
+  (cin-parse-file cin-file-name phrase #'eval-buffer))
 
 
 ;; End:
