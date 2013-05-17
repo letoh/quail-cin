@@ -106,7 +106,8 @@
   (parse-cin cin-file-name #'save-buffer))
 
 (defun xy-quail-load-cin (cin-file-name)
-  (interactive)
+  (interactive (list
+		(read-file-name "cin path: ")))
   (parse-cin cin-file-name #'eval-buffer))
 
 
