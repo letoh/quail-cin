@@ -43,9 +43,9 @@
 
 (defun cin-safe-quote (key)
   (replace-regexp-in-string
-   ";" (regexp-quote (regexp-quote "\\;")) ;"\\\\\\\\;"
+   ";" (regexp-quote (regexp-quote "\\;"))
    (replace-regexp-in-string
-    "\\\\" (regexp-quote (regexp-quote "\\\\")) ;"\\\\\\\\\\\\\\\\"
+    "\\\\" (regexp-quote (regexp-quote "\\\\"))
     (replace-regexp-in-string
      "\"" "#-#\\\""
       key t t)))
@@ -54,10 +54,8 @@
 (defun parse-cin (cin-file-name &optional action phrase)
   (when (file-exists-p cin-file-name)
     (with-temp-buffer
-    ;(with-output-to-temp-buffer "*cin*"
-    ;(with-temp-file "/home/letoh/src/elisp/aaa"
       (insert-file-contents cin-file-name)
-      ;;
+      ;; some cin files lack of final end tag
       (when (and (re-search-forward "%chardef[ \t]*begin" nil "noerror")
 		 (not (re-search-forward "%chardef[ \t]*end" nil "noerror")))
 	(goto-char (point-max))
@@ -68,13 +66,11 @@
       (let (section attrs)
 	(while (re-search-forward
 		"[ \t]*\\([^ \n\t]+\\)[ \t]*\\([^\t\n]+\\)?" nil "noerror")
-	  (let ((key (match-string 1))
-		(val (match-string 2))
+	  (let ((key   (match-string 1))
+		(val   (match-string 2))
 		(templ (if phrase "  (\"%s\" [\"%s\"])" "  (\"%s\" \"%s\")")))
-	    ;;(save-match-data
-	      (when (string-match-p "^%[^%]" key)
-		(cond ((string= val "begin") (setq section (intern key)))))
-	      ;;)
+	    (when (string-match-p "^%[^%]" key)
+	      (cond ((string= val "begin") (setq section (intern key)))))
 	    (cond
 	     ((eq section '%keyname)
 	      (cond ((string= val "begin")
@@ -90,7 +86,6 @@
 		     (replace-match ")\n"))
 		    (t
 		     (replace-match (format
-				     ;;"  (\"%s\" \"%s\")"
 				     templ
 				     (cin-safe-quote-key key) (cin-safe-quote val))))))
 	     (t
@@ -98,18 +93,15 @@
 		(add-to-list 'attrs (cons (intern key) val))
 		(replace-match "")))
 	     )
-	    ;;(princ (format "'%s' : '%s'\n" key val))
-	    ;;(save-match-data
+
 	    (when (string-match-p "^%[^%]" key)
 	      (cond ((string= val "end")   (setq section nil))))
-	      ;;)
 	    ))
-	;;(print attrs)
+	;; postprocess
 	(goto-char (point-min))
 	(replace-string "#-#\\" "")
 	(goto-char (point-max))
 	(insert (format "(provide 'lime-%s-quail)\n\n" (cdr (assoc '%ename attrs))))
-	;;(save-buffer)
 	(when action
 	  (funcall action))
 	))))
