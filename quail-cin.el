@@ -35,13 +35,20 @@
 	  (cdr (assoc '%prompt attrs))
 	  ))
 
+(defun cin-safe-quote-key (key)
+  (replace-regexp-in-string
+   "\\\\" (regexp-quote (regexp-quote "\\\\"))
+   key)
+  )
+
 (defun cin-safe-quote (key)
-  ;;(replace-regexp-in-string "\\\\" "\\\\\\\\" key) val)))))
   (replace-regexp-in-string
    ";" (regexp-quote (regexp-quote "\\;")) ;"\\\\\\\\;"
    (replace-regexp-in-string
     "\\\\" (regexp-quote (regexp-quote "\\\\")) ;"\\\\\\\\\\\\\\\\"
-    key))
+    (replace-regexp-in-string
+     "\"" "#-#\\\""
+      key t t)))
   )
 
 (defun parse-cin (cin-file-name &optional action)
@@ -59,7 +66,7 @@
       (goto-char 1)
       (let (section attrs)
 	(while (re-search-forward
-		"[ \t]*\\([^ \n\t]+\\)[ \t]*\\([^ \t\n]+\\)?" nil "noerror")
+		"[ \t]*\\([^ \n\t]+\\)[ \t]*\\([^\t\n]+\\)?" nil "noerror")
 	  (let ((key (match-string 1))
 		(val (match-string 2)))
 	    ;;(save-match-data
@@ -82,7 +89,7 @@
 		    (t
 		     (replace-match (format
 				     "  (\"%s\" \"%s\")"
-				     (cin-safe-quote key) val)))))
+				     (cin-safe-quote-key key) (cin-safe-quote val))))))
 	     (t
 	      (progn
 		(add-to-list 'attrs (cons (intern key) val))
@@ -95,6 +102,8 @@
 	      ;;)
 	    ))
 	;;(print attrs)
+	(goto-char (point-min))
+	(replace-string "#-#\\" "")
 	(goto-char (point-max))
 	(insert (format "(provide 'lime-%s-quail)\n\n" (cdr (assoc '%ename attrs))))
 	;;(save-buffer)
