@@ -16,10 +16,11 @@
 (defun cin-attrs-to-header (attrs)
   (let* ((ename (cdr (assoc '%ename attrs)))
 	 (cname (or (cdr (assoc '%prompt attrs))
+		    (cdr (assoc '%cname attrs))
 		    ename)))
     (format (concat
 	     "(require 'quail)\n"
-	     "(quail-define-package \"lime-%s-quail\" \"Chinese\" \"[%s]\"\n"
+	     "(quail-define-package \"lime-%s-quail\" \"Chinese-BIG5\" \"[%s]\"\n"
 	     " '(")
 	    ename cname)))
 
