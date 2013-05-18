@@ -129,7 +129,13 @@
 
 (defun quail-cin-load-file (cin-file-name &optional phrase)
   (interactive (list
-		(read-file-name "cin file name: ")))
+		(read-file-name
+		 "cin file name: " nil nil t nil
+		 #'(lambda (file-name)
+		     (if (string= (file-name-nondirectory file-name) "")
+			 t
+		       (string= (file-name-extension file-name) "cin"))))
+		(yes-or-no-p "phrase based? ")))
   (cin-parse-file cin-file-name phrase #'eval-buffer))
 
 
