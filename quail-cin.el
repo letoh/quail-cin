@@ -21,6 +21,8 @@
 
 (defvar cin-ime-name-prefix "quail-cin-")
 
+(defvar cin-ime-language-environment "Chinese-BIG5")
+
 
 (defun cin-attrs-get-cname (attrs &optional default)
   (or (cdr (assoc '%prompt attrs))
@@ -29,15 +31,28 @@
       (cdr (assoc '%ename attrs))
       "CIN"))
 
+(defun cin-attrs-get-pkgname (attrs &optional default)
+  (let ((pkgname (cdr (assoc '%%pkgname attrs))))
+    (concat cin-ime-name-prefix
+	    (or pkgname default
+		(cdr (assoc '%ename attrs))))))
+
+(defun cin-attrs-get-prompt (attrs &optional default)
+  (or (cdr (assoc '%%prompt attrs))
+      default
+      (cdr (assoc '%prompt attrs))
+      (cdr (assoc '%cname attrs))
+      "CIN"))
+
 (defun cin-attrs-to-header (attrs)
   (let* ((ename (cdr (assoc '%ename attrs)))
 	 (cname (cin-attrs-get-cname attrs ename))
-	 (prefix cin-ime-name-prefix))
+	 (pkgname (cin-attrs-get-pkgname attrs ename)))
     (format (concat
 	     "(require 'quail)\n\n"
-	     "(quail-define-package \"%s%s\" \"Chinese-BIG5\" \"[%s]\"\n"
+	     "(quail-define-package \"%s\" \"%s\" \"[%s]\"\n"
 	     " '(")
-	    prefix ename cname)))
+	    pkgname cin-ime-language-environment (cin-attrs-get-prompt attrs))))
 
 (defun cin-attrs-to-footer (attrs)
   (let* ((ename (cdr (assoc '%ename attrs)))
@@ -80,7 +95,7 @@
 	   (string= (file-name-extension file-name) "cin"))
        t))
 
-(defun cin-parse-file (cin-file-name &optional phrase action)
+(defun cin-parse-file (cin-file-name &optional phrase pkg-name prompt action)
   (when (cin-filename-p cin-file-name)
     (with-temp-buffer
       (insert-file-contents cin-file-name)
@@ -93,9 +108,13 @@
 	  (goto-char (point-max))
 	  (insert "%chardef end\n")))
       (save-excursion (delete-trailing-whitespace))
+      (when (string= "" pkg-name) (setq pkg-name nil))
+      (when (string= "" prompt) (setq prompt nil))
       ;;
       (let ((templ (if phrase "  (\"%s\" [\"%s\"])" "  (\"%s\" \"%s\")"))
-	    section attrs)
+	    (attrs (list (cons (intern "%%pkgname") pkg-name)
+			 (cons (intern "%%prompt") prompt)))
+	    section)
 	(message "parsing %s ..." cin-file-name)
 	(while (re-search-forward
 		"[ \t]*\\([^ \n\t]+\\)[ \t]*\\([^\t\n]+\\)?" nil "noerror")
@@ -136,25 +155,37 @@
 	(goto-char (point-min))
 	(replace-string "#-#\\" "")
 	(goto-char (point-max))
-	(insert (format "(provide '%s%s)\n\n"
-			cin-ime-name-prefix (cdr (assoc '%ename attrs))))
-	(message "parsing %s finished" cin-file-name)
+	(insert (format "(provide '%s)\n\n" (cin-attrs-get-pkgname attrs)))
+	(message "parsing %s finished, quail package name is `%s'"
+		 cin-file-name (cin-attrs-get-pkgname attrs))
 	;; action on the final result
 	(when action
 	  (funcall action))
 	))))
 
-(defun quail-cin-convert-to-quail (cin-file-name &optional phrase)
-  (cin-parse-file cin-file-name phrase #'save-buffer))
+(defun read-cin-attrs-from-minibuf (&optional buffer)
+  (let* ((buf-file-name  (buffer-file-name))
+	 (init-file-name (if (and buffer (cin-filename-p buf-file-name))
+			     buf-file-name nil))
+	 (cin-file-name (read-file-name
+			 "cin file name: " nil nil t init-file-name
+			 #'(lambda (file-name) (cin-filename-p file-name t)))))
+    (list cin-file-name
+	  (yes-or-no-p "Phrase based? ")
+	  (read-string "IME name (leave empty to get from file): "
+		       (file-name-sans-extension
+			(file-name-nondirectory cin-file-name)))
+	  (read-string "Prompt String (leave empty to get from file): "))))
 
-(defun quail-cin-load-file (cin-file-name &optional phrase)
-  (interactive (list
-		(read-file-name
-		 "cin file name: " nil nil t nil
-		 #'(lambda (file-name) (cin-filename-p file-name t)))
-		(yes-or-no-p
-		 "phrase based? ")))
-  (cin-parse-file cin-file-name phrase #'eval-buffer))
+(defun quail-cin-convert-to-quail (cin-file-name &optional phrase pkg-name prompt)
+  "Convert a cin file to quail package and save the result to a file."
+  (interactive (read-cin-attrs-from-minibuf t))
+  (cin-parse-file cin-file-name phrase pkg-name prompt #'save-buffer))
+
+(defun quail-cin-load-file (cin-file-name &optional phrase pkg-name prompt)
+  "Load a cin file as a quail package."
+  (interactive (read-cin-attrs-from-minibuf))
+  (cin-parse-file cin-file-name phrase pkg-name prompt #'eval-buffer))
 
 
 ;; End:
