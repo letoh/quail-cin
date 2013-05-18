@@ -71,7 +71,7 @@
   )
 
 (defun cin-filename-p (file-name &optional allow-dir)
-  "Return t if the FILE-NANE is a valid cin file or ALLOW-DIR is t."
+  "Return t if the FILE-NANE is a valid cin file or a directory if ALLOW-DIR is t."
   (and (file-exists-p file-name)
        (or (and (eq 't allow-dir)
 		(car (file-attributes file-name))
