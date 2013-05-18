@@ -49,7 +49,8 @@
 	     "\"\n"
 	     " '((\"\\\\C-?\" . quail-delete-last-char)\n"
 	     "   (\">\" . quail-next-translation)\n"
-	     "   (\"<\" . quail-prev-translation))\n"
+	     "   (\"<\" . quail-prev-translation)\n"
+	     "   (\" \" . quail-select-current))\n"
 	     " nil nil nil t)\n")
 	    cname)))
 
