@@ -83,20 +83,22 @@
   (when (cin-filename-p cin-file-name)
     (with-temp-buffer
       (insert-file-contents cin-file-name)
-      ;; some cin files lack of final end tag
-      (when (and (re-search-forward "%chardef[ \t]*begin" nil "noerror")
-		 (not (re-search-forward "%chardef[ \t]*end" nil "noerror")))
-	(goto-char (point-max))
-	(insert "%chardef end\n"))
-      ;;
       (goto-char (point-min))
+      ;; preprocessing
+      (save-excursion
+	;; some cin files lack of final end tag
+	(when (and (re-search-forward "%chardef[ \t]*begin" nil "noerror")
+		   (not (re-search-forward "%chardef[ \t]*end" nil "noerror")))
+	  (goto-char (point-max))
+	  (insert "%chardef end\n")))
       (save-excursion (delete-trailing-whitespace))
-      (let (section attrs)
+      ;;
+      (let ((templ (if phrase "  (\"%s\" [\"%s\"])" "  (\"%s\" \"%s\")"))
+	    section attrs)
 	(while (re-search-forward
 		"[ \t]*\\([^ \n\t]+\\)[ \t]*\\([^\t\n]+\\)?" nil "noerror")
 	  (let ((key   (match-string 1))
-		(val   (match-string 2))
-		(templ (if phrase "  (\"%s\" [\"%s\"])" "  (\"%s\" \"%s\")")))
+		(val   (match-string 2)))
 	    (when (string-match-p "^%[^%]" key)
 	      (cond ((string= val "begin") (setq section (intern key)))))
 	    (cond
@@ -130,6 +132,7 @@
 	(goto-char (point-max))
 	(insert (format "(provide '%s%s)\n\n"
 			cin-ime-name-prefix (cdr (assoc '%ename attrs))))
+	;; action on the final result
 	(when action
 	  (funcall action))
 	))))
