@@ -69,8 +69,18 @@
       val t t)))
   )
 
+(defun cin-filename-p (file-name &optional allow-dir)
+  "Return t if the FILE-NANE is a valid cin file or ALLOW-DIR is t."
+  (and (file-exists-p file-name)
+       (or (and (eq 't allow-dir)
+		(car (file-attributes file-name))
+		(string= (file-name-nondirectory
+			  (file-name-as-directory file-name)) ""))
+	   (string= (file-name-extension file-name) "cin"))
+       t))
+
 (defun cin-parse-file (cin-file-name &optional phrase action)
-  (when (file-exists-p cin-file-name)
+  (when (cin-filename-p cin-file-name)
     (with-temp-buffer
       (insert-file-contents cin-file-name)
       ;; some cin files lack of final end tag
@@ -131,11 +141,9 @@
   (interactive (list
 		(read-file-name
 		 "cin file name: " nil nil t nil
-		 #'(lambda (file-name)
-		     (if (string= (file-name-nondirectory file-name) "")
-			 t
-		       (string= (file-name-extension file-name) "cin"))))
-		(yes-or-no-p "phrase based? ")))
+		 #'(lambda (file-name) (cin-filename-p file-name t)))
+		(yes-or-no-p
+		 "phrase based? ")))
   (cin-parse-file cin-file-name phrase #'eval-buffer))
 
 
