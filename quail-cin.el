@@ -96,12 +96,15 @@
       ;;
       (let ((templ (if phrase "  (\"%s\" [\"%s\"])" "  (\"%s\" \"%s\")"))
 	    section attrs)
+	(message "parsing %s ..." cin-file-name)
 	(while (re-search-forward
 		"[ \t]*\\([^ \n\t]+\\)[ \t]*\\([^\t\n]+\\)?" nil "noerror")
 	  (let ((key   (match-string 1))
 		(val   (match-string 2)))
 	    (when (string-match-p "^%[^%]" key)
-	      (cond ((string= val "begin") (setq section (intern key)))))
+	      (cond ((string= val "begin") (progn
+					     (setq section (intern key))
+					     (message "converting %s ..." key)))))
 	    (cond
 	     ((eq section '%keyname)
 	      (cond ((string= val "begin")
@@ -125,7 +128,9 @@
 	     )
 
 	    (when (string-match-p "^%[^%]" key)
-	      (cond ((string= val "end")   (setq section nil))))
+	      (cond ((string= val "end") (progn
+					   (setq section nil)
+					   (message "parsing %s ..." cin-file-name)))))
 	    ))
 	;; postprocess
 	(goto-char (point-min))
@@ -133,6 +138,7 @@
 	(goto-char (point-max))
 	(insert (format "(provide '%s%s)\n\n"
 			cin-ime-name-prefix (cdr (assoc '%ename attrs))))
+	(message "parsing %s finished" cin-file-name)
 	;; action on the final result
 	(when action
 	  (funcall action))
