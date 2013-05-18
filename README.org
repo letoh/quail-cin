@@ -1,0 +1,76 @@
+#+TITLE:     quail-cin: A utility for converting cin table to quail module
+#+AUTHOR:    letoh
+#+EMAIL:     letoh DOT tw AT gmail
+#+DATE:      2013-05-19 Sun
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:nil
+#+OPTIONS:   creator:nil author:nil timestamp:nil postamble:nil
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+
+
+
+* Install
+
+雖然這不是需要常駐使用的工具，如果真的需要安裝的話，可以在 =.emacs= 加入以下設定：
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'load-path "/path/to/quail-cin")
+(require 'quail-cin)
+#+END_SRC
+
+
+* Usage
+
+** Loading a cin file as a quail package
+
+=quail-cin-load-file=
+
+
+對付一般 cin 檔，可以直接以檔名為參數載入：
+
+#+BEGIN_SRC emacs-lisp
+(quail-cin-load-file "foo.cin")
+#+END_SRC
+
+而有些 cin 檔定義為片語型式，需要指定額外的參數：
+
+#+BEGIN_SRC emacs-lisp
+(quail-cin-load-file "foo.cin" t)
+#+END_SRC
+
+另外也可以透過指定 =輸入法名稱= 與 =啟動時的提示字串= 以取代 cin 檔案中的設定：
+
+#+BEGIN_SRC emacs-lisp
+(quail-cin-load-file "bopomofo.cin" nil "bopomofo" "ㄅ半")
+#+END_SRC
+
+若只是臨時載入使用，也可以在 minibuffer 輸入 =M-x quail-cin-load-file= 進行轉換設定與載入檔案。
+
+
+載入成功後可以在 =M-x set-input-method= 後輸入 =quail-cin-bopomofo= 即可用 =C-\= 切換輸入法開關狀態。
+
+若要作為預設使用可以直接設定：
+
+#+BEGIN_SRC emacs-lisp
+(setq default-input-method "quail-cin-bopomofo")
+#+END_SRC
+
+
+
+** Converting a cin file
+
+=quail-cin-load-file=
+
+
+基本使用與 =quail-cin-load-file= 類似，但轉換完並不載入，而是儲存為獨立的 elisp 檔案，可於後續載入時省去重新轉換的動作。
+
+轉換後的檔案太大時，建議可以先壓縮以加快載入速度：
+
+#+BEGIN_SRC emacs-lisp
+(load "bopomofo.el.bz2")
+#+END_SRC
+
