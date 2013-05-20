@@ -63,7 +63,7 @@
 
 ** Converting a cin file
 
-=quail-cin-load-file=
+=quail-cin-convert-to-quail=
 
 
 基本使用與 =quail-cin-load-file= 類似，但轉換完並不載入，而是儲存為獨立的 elisp 檔案，可於後續載入時省去重新轉換的動作。
