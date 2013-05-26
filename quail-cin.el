@@ -3,8 +3,10 @@
 ;; Copyright (C) 2013  Meng-Cheng Cheng (letoh)
 ;;
 
+;;; Commentary:
+;;
 
-;;; Usage:
+;; Usage:
 ;;
 ;;   (quail-cin-load-file "greek.cin")
 ;;   (quail-cin-load-file "symbols.cin")
@@ -14,6 +16,7 @@
 ;;
 ;;   (quail-cin-load-file "NewCJ3.cin" t)
 ;;
+
 
 ;;; Code:
 
@@ -25,6 +28,15 @@
 
 
 (defun cin-attrs-get-cname (attrs &optional default)
+  "Return a cname string.
+
+cname is an optional attribute that describs the input method name in Chinese.
+This function tries to build a cname string from the prompt string or cname
+string in the ATTRS alist
+
+ATTRS cin attribute alist.
+
+DEFAULT will be returned when some candidates are not in the ATTRS."
   (or (cdr (assoc '%prompt attrs))
       (cdr (assoc '%cname attrs))
       default
@@ -32,12 +44,25 @@
       "CIN"))
 
 (defun cin-attrs-get-pkgname (attrs &optional default)
+  "Return a quail package name.
+
+ATTRS cin attribute alist.
+
+DEFAULT will be returned when some candidates are not in the ATTRS."
   (let ((pkgname (cdr (assoc '%%pkgname attrs))))
     (concat cin-ime-name-prefix
 	    (or pkgname default
 		(cdr (assoc '%ename attrs))))))
 
 (defun cin-attrs-get-prompt (attrs &optional default)
+  "Return a prompt string.
+
+The prompt string will be displayed on the mode-line when the input method
+module is switched on.
+
+ATTRS cin attribute alist.
+
+DEFAULT will be returned when some candidates are not in the ATTRS."
   (or (cdr (assoc '%%prompt attrs))
       default
       (cdr (assoc '%prompt attrs))
@@ -45,6 +70,7 @@
       "CIN"))
 
 (defun cin-attrs-to-header (attrs)
+  "Return quail package header that is built from ATTRS as a string."
   (let* ((ename (cdr (assoc '%ename attrs)))
 	 (cname (cin-attrs-get-cname attrs ename))
 	 (pkgname (cin-attrs-get-pkgname attrs ename)))
@@ -55,6 +81,7 @@
 	    pkgname cin-ime-language-environment (cin-attrs-get-prompt attrs))))
 
 (defun cin-attrs-to-footer (attrs)
+  "Return quail package footer that is built from ATTRS as a string."
   (let* ((ename (cdr (assoc '%ename attrs)))
 	 (cname (cin-attrs-get-cname attrs ename)))
     (format (concat
@@ -70,12 +97,14 @@
 	    cname)))
 
 (defun cin-safe-quote-key (key)
+  "Return a quoted string built from KEY."
   (replace-regexp-in-string
    "\\\\" (regexp-quote (regexp-quote "\\\\"))
    key)
   )
 
 (defun cin-safe-quote (val)
+  "Return a quoted string built from VAL."
   (replace-regexp-in-string
    ";" (regexp-quote (regexp-quote "\\;"))
    (replace-regexp-in-string
@@ -96,6 +125,19 @@
        t))
 
 (defun cin-parse-file (cin-file-name &optional phrase pkg-name prompt action)
+  "A simple cin parser for generating quail package description.
+
+CIN-FILE-NAME is a string that indicates name of the file to be parsed.
+
+PHRASE is t for phrase-based cin table.
+
+PKG-NAME is a string for quail package name, or nil for building the name
+         from the cin file.
+
+PROMPT is a prompt string for displaying on the mode line when the package
+       is switched on.
+
+ACTION is a function to be applied on the result."
   (when (cin-filename-p cin-file-name)
     (with-temp-buffer
       (insert-file-contents cin-file-name)
@@ -164,6 +206,9 @@
 	))))
 
 (defun read-cin-attrs-from-minibuf (&optional buffer)
+  "Return a list of parsing parameters.
+
+BUFFER is t for quessing buffer file name first."
   (let* ((buf-file-name  (buffer-file-name))
 	 (init-file-name (if (and buffer (cin-filename-p buf-file-name))
 			     buf-file-name nil))
@@ -178,12 +223,32 @@
 	  (read-string "Prompt String (leave empty to get from file): "))))
 
 (defun quail-cin-convert-to-quail (cin-file-name &optional phrase pkg-name prompt)
-  "Convert a cin file to quail package and save the result to a file."
+  "Convert a cin file to quail package and save the result to a file.
+
+CIN-FILE-NAME is a string that indicates name of the file to be parsed.
+
+PHRASE is t for phrase-based cin table.
+
+PKG-NAME is a string for quail package name, or nil for building the name
+         from the cin file.
+
+PROMPT is a prompt string for displaying on the mode line when the package
+       is switched on."
   (interactive (read-cin-attrs-from-minibuf t))
   (cin-parse-file cin-file-name phrase pkg-name prompt #'save-buffer))
 
 (defun quail-cin-load-file (cin-file-name &optional phrase pkg-name prompt)
-  "Load a cin file as a quail package."
+  "Load a cin file as a quail package.
+
+CIN-FILE-NAME is a string that indicates name of the file to be parsed.
+
+PHRASE is t for phrase-based cin table.
+
+PKG-NAME is a string for quail package name, or nil for building the name
+         from the cin file.
+
+PROMPT is a prompt string for displaying on the mode line when the package
+       is switched on."
   (interactive (read-cin-attrs-from-minibuf))
   (cin-parse-file cin-file-name phrase pkg-name prompt #'eval-buffer))
 
