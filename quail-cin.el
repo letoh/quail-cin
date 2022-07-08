@@ -105,14 +105,14 @@ DEFAULT will be returned when some candidates are not in the ATTRS."
 
 (defun cin-safe-quote (val)
   "Return a quoted string built from VAL."
-  (replace-regexp-in-string
-   ";" (regexp-quote (regexp-quote "\\;"))
-   (replace-regexp-in-string
-    "\\\\" (regexp-quote (regexp-quote "\\\\"))
+  (ignore-errors
     (replace-regexp-in-string
-     "\"" "#-#\\\""
-      val t t)))
-  )
+     ";" (regexp-quote (regexp-quote "\\;"))
+     (replace-regexp-in-string
+      "\\\\" (regexp-quote (regexp-quote "\\\\"))
+      (replace-regexp-in-string
+       "\"" "#-#\\\""
+       val t t)))))
 
 (defun cin-filename-p (file-name &optional allow-dir)
   "Return t if the FILE-NAME is a valid cin file or a directory if ALLOW-DIR is t."
